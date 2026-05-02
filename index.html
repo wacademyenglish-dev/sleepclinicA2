@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WOLF LABS | The Sleep Clinic (A2)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* === SLEEP CLINIC VARIABLES === */
+        :root {
+            --bg-night: #090c15; 
+            --bg-panel: #13182b; 
+            --accent-cyan: #00d2ff; /* Brain waves / Logic */
+            --accent-purple: #9d4edd; /* Sleep / Memory */
+            --accent-gold: #ffb703; /* Awake / Alerts */
+            --text-main: #f8f9fa;
+            --hp-red: #ef476f;
+        }
+
+        body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: var(--bg-night);
+            color: var(--text-main);
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            background-image: radial-gradient(circle at 15% 50%, rgba(157, 78, 221, 0.08), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(0, 210, 255, 0.08), transparent 25%);
+        }
+
+        .header-title { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
+        .mono-text { font-family: 'JetBrains Mono', monospace; }
+
+        /* HUD TOP */
+        #hud-top {
+            position: fixed; top: 0; left: 0; right: 0; padding: 20px 40px;
+            background: linear-gradient(to bottom, rgba(9,12,21,0.95) 0%, transparent);
+            z-index: 1000;
+        }
+
+        .hud-bar-container { width: 150px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .hud-bar-fill { height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 6px;}
+
+        /* CONTENT ARENA */
+        #mission-arena { height: 100vh; padding-bottom: 120px; }
+
+        /* GLASS PANELS */
+        .clinic-card {
+            background-color: rgba(19, 24, 43, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px; padding: 2.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative; transition: all 0.3s ease;
+        }
+
+        /* BUTTONS */
+        .btn-purple {
+            background: linear-gradient(135deg, #7b2cbf, #9d4edd); color: white; border-radius: 500px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.4); border: none; cursor: pointer;
+        }
+        .btn-purple:active { transform: scale(0.95); }
+        .btn-purple:hover { box-shadow: 0 6px 20px rgba(157, 78, 221, 0.6); transform: translateY(-2px); }
+
+        /* VITALS MONITOR (MCQ) */
+        .vital-row {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
+            transition: all 0.3s ease; cursor: pointer; display: flex; align-items: center; padding: 1.2rem 2rem; position: relative; overflow: hidden;
+        }
+        .vital-row:hover:not(.locked) { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); transform: translateX(5px); }
+        .vital-line { fill: none; stroke: #555; stroke-width: 2; transition: all 0.3s; stroke-dasharray: 200; stroke-dashoffset: 0; }
+        .vital-row.correct { background: rgba(0, 210, 255, 0.1); border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .vital-row.correct .vital-line { stroke: var(--accent-cyan); animation: ekg-healthy 1s linear infinite; }
+        .vital-row.wrong { background: rgba(239, 71, 111, 0.1); border-color: var(--hp-red); color: var(--hp-red); }
+        .vital-row.wrong .vital-line { stroke: var(--hp-red); animation: ekg-flatline 2s forwards; }
+
+        @keyframes ekg-healthy { 0% { stroke-dashoffset: 200; } 100% { stroke-dashoffset: 0; } }
+        @keyframes ekg-flatline { 0% { stroke-dashoffset: 200; stroke: var(--hp-red); } 50% { stroke-dashoffset: 100; stroke: var(--hp-red); } 100% { stroke-dashoffset: 100; stroke: #333; } }
+
+        /* NEURO-NODES (VOCAB) */
+        .neuro-node { perspective: 1000px; cursor: pointer; }
+        .neuro-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
+        .neuro-node.flipped .neuro-inner { transform: rotateY(180deg); }
+        .neuro-front, .neuro-back {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;
+        }
+        .neuro-front { background: linear-gradient(180deg, #13182b 0%, #0d111d 100%); border: 1px solid rgba(157, 78, 221, 0.3); }
+        .neuro-back { transform: rotateY(180deg); background: var(--accent-purple); color: white; border: 1px solid #c77dff; }
+
+        /* CLINICAL TRANSCRIPT (GRAMMAR EXTRACTION) */
+        .transcript-line { margin-bottom: 1.5rem; transition: all 0.3s ease; padding: 0 1rem; border-left: 2px solid transparent;}
+        .transcript-line.inactive { color: rgba(255,255,255,0.3); }
+        .script-item-container { cursor: pointer; transition: all 0.3s ease; position: relative; margin-bottom: 1.5rem; }
+        .script-item-container:hover .transcript-line.inactive { color: rgba(255,255,255,0.6); border-left-color: rgba(255,255,255,0.2); }
+        
+        .script-active-box { 
+            background: #090c15; border: 1px solid rgba(0, 210, 255, 0.2); border-left: 6px solid var(--accent-cyan); 
+            padding: 1.5rem 2rem; border-radius: 16px; box-shadow: 0 15px 35px rgba(0, 210, 255, 0.1); display: none;
+        }
+        .script-item-container.active .script-active-box { display: block; }
+        .script-item-container.active .transcript-line { display: none; }
+
+        /* SYNAPSE LINK (MATCHING) */
+        .synapse-node { background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.2rem; cursor: pointer; transition: all 0.3s; position: relative; font-weight: 700; }
+        .synapse-node:hover:not(.matched) { border-color: var(--accent-cyan); background: rgba(0,210,255,0.05); }
+        .synapse-node.active { border-color: var(--accent-cyan); background: rgba(0,210,255,0.1); box-shadow: 0 0 15px rgba(0,210,255,0.3); }
+        .synapse-node.matched { background: var(--accent-cyan); color: #090c15; border-color: var(--accent-cyan); pointer-events: none; opacity: 0.9; }
+        
+        /* PRESCRIPTION PAD (FILL BLANKS) */
+        .prescription-pad { background: #fdfdfd; color: #1a1a1a; border-radius: 8px; padding: 3rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; font-family: 'Nunito', sans-serif; background-image: repeating-linear-gradient(transparent, transparent 31px, #e0e0e0 31px, #e0e0e0 32px); line-height: 32px; border-top: 20px solid var(--accent-purple); }
+        .rx-symbol { font-family: 'Times New Roman', serif; font-size: 3rem; font-weight: bold; position: absolute; top: 1rem; left: 1.5rem; opacity: 0.1; }
+        .pill-blank { display: inline-block; min-width: 80px; height: 26px; border-bottom: 2px dashed #888; cursor: pointer; text-align: center; color: var(--accent-purple); font-weight: 900; transition: all 0.2s; }
+        .pill-blank:hover { border-color: var(--accent-purple); background: rgba(157,78,221,0.1); }
+        .pill-blank.filled { border-bottom: none; pointer-events: none; background: var(--accent-purple); color: white; border-radius: 100px; padding: 0 12px; line-height: 26px; font-size: 0.8em; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.2);}
+        .pill-btn { background: #13182b; border: 2px solid var(--accent-purple); color: white; border-radius: 100px; padding: 8px 20px; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .pill-btn:hover { background: var(--accent-purple); transform: translateY(-2px); }
+
+        /* CLINICAL DIAGNOSIS (THE FIXER) */
+        .symptom-word { background: rgba(239, 71, 111, 0.1); color: var(--hp-red); border-bottom: 2px dotted var(--hp-red); cursor: pointer; transition: all 0.2s; padding: 0 4px; border-radius: 4px; font-weight: 800; }
+        .symptom-word:hover { background: rgba(239, 71, 111, 0.2); }
+        .symptom-fixed { background: rgba(0, 210, 255, 0.1); color: var(--accent-cyan); border-bottom: 2px solid var(--accent-cyan); pointer-events: none; padding: 0 4px; border-radius: 4px; font-weight: 800; }
+
+        /* SPEAKING STARTERS */
+        .starter-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; opacity: 0; }
+        .starter-content.open { max-height: 300px; opacity: 1; margin-top: 1rem; }
+
+        /* FOOTER CONSOLE */
+        #nav-console {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: calc(100% - 48px); max-width: 900px;
+            background: rgba(9, 12, 21, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 100px;
+            padding: 12px 30px; z-index: 5000; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        /* DRAWERS */
+        .drawer { background: #0f1322; color: var(--text-main); border-left: 1px solid rgba(255,255,255,0.05); transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 5100; box-shadow: -10px 0 40px rgba(0,0,0,0.9);}
+        .drawer.active { transform: translateX(0); }
+
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse-soft { animation: pulseSoft 2s infinite; }
+        @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(157, 78, 221, 0.5); border-radius: 10px; }
+
+        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-5px, 0, 0); } 40%, 60% { transform: translate3d(5px, 0, 0); } }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-sm">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- HUD SUPERIOR -->
+    <div id="hud-top" class="hidden justify-between items-center w-full">
+        <div class="flex items-center gap-10">
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em] mono-text">Patient Stress (HP)</span>
+                <div class="hud-bar-container"><div id="hp-bar" class="hud-bar-fill bg-[var(--hp-red)]" style="width: 100%;"></div></div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em] mono-text">Cognitive Focus (XP)</span>
+                <div class="hud-bar-container"><div id="xp-bar" class="hud-bar-fill bg-[var(--accent-cyan)]" style="width: 0%;"></div></div>
+            </div>
+        </div>
+        <div class="text-right flex items-center gap-4">
+            <button onclick="toggleTeacherHUD()" class="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white transition-all mono-text"><i class="fas fa-stethoscope mr-2"></i>Doctor's Notes</button>
+            <div>
+                <p class="header-title text-2xl font-black text-white tracking-tight leading-none">WOLF LABS</p>
+                <p class="text-[8px] font-bold text-[var(--accent-purple)] tracking-[0.4em] uppercase mono-text mt-1">Neuro Clinic A2</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL (CAPA) -->
+    <main id="dashboard" class="flex-grow flex flex-col items-center justify-center relative px-8 z-10">
+        <button onclick="toggleFullscreen()" class="absolute top-8 right-8 text-white/50 hover:text-white text-2xl" title="Fullscreen"><i class="fas fa-expand"></i></button>
+        <div class="max-w-5xl w-full flex flex-col items-center text-center space-y-10 animate-in fade-in">
+            <!-- Brain SVG Icon -->
+            <div class="w-48 h-48 rounded-[2rem] bg-gradient-to-br from-[#13182b] to-[#0a0c16] flex items-center justify-center shadow-[0_0_60px_rgba(157,78,221,0.2)] border border-[var(--accent-purple)]/30 relative">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="url(#purpleGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <defs><linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#9d4edd" /><stop offset="100%" stop-color="#00d2ff" /></linearGradient></defs>
+                    <path d="M12 4c-3.3 0-6 2.7-6 6 0 1.6.6 3.1 1.7 4.2C8.8 15.3 9 16.6 9 18h6c0-1.4.2-2.7 1.3-3.8 1.1-1.1 1.7-2.6 1.7-4.2 0-3.3-2.7-6-6-6z"></path><path d="M9 22h6"></path><path d="M9 14h6"></path>
+                </svg>
+                <div class="absolute inset-0 bg-[var(--accent-cyan)] opacity-10 rounded-[2rem] blur-xl pulse-soft"></div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-[var(--accent-cyan)] font-bold text-[11px] tracking-[0.8em] uppercase mono-text">Patient File: 2024-X</p>
+                <h1 class="text-6xl md:text-8xl font-black text-white leading-none tracking-tighter header-title drop-shadow-2xl">THE SLEEP <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-purple)] to-[var(--accent-cyan)]">CLINIC</span></h1>
+            </div>
+            <div class="flex flex-wrap justify-center gap-3 mono-text">
+                <span class="px-5 py-2 bg-[var(--accent-purple)]/10 border border-[var(--accent-purple)]/20 text-[10px] font-bold uppercase tracking-widest text-[#e0b0ff] rounded-full">Zero Conditional</span>
+                <span class="px-5 py-2 bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#ccc] rounded-full">Health & Brain Vocab</span>
+                <span class="px-5 py-2 bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#ccc] rounded-full">Listening</span>
+            </div>
+            <button onclick="startMission()" class="mt-8 btn-purple px-14 py-5 text-lg">
+                Enter Clinic
+            </button>
+            <p class="text-[10px] text-[#666] mt-4 uppercase tracking-widest mono-text"><i class="fas fa-mouse-pointer mr-1"></i> Double-click any English word for Clinical Dictionary</p>
+        </div>
+    </main>
+
+    <!-- ARENA DE CONTEÚDO DA LIÇÃO -->
+    <main id="mission-arena" class="hidden flex-grow flex-col overflow-hidden relative">
+        <div id="mission-content" class="flex-grow overflow-y-auto px-6 py-24 flex flex-col items-center w-full"></div>
+    </main>
+
+    <!-- CONSOLA DE NAVEGAÇÃO -->
+    <footer id="nav-console" class="hidden justify-between items-center w-full">
+        <div class="flex items-center gap-6 w-1/4">
+            <button onclick="goHome()" class="text-[#666] hover:text-[var(--hp-red)] transition-colors"><i class="fas fa-power-off text-xl"></i></button>
+            <div class="flex flex-col mono-text">
+                <span id="console-title" class="text-[10px] font-bold text-white uppercase tracking-widest truncate">Dossier</span>
+                <span id="console-type" class="text-[8px] font-bold text-[#888] uppercase tracking-widest">Type</span>
+            </div>
+        </div>
+        <div class="flex flex-col items-center gap-3 w-1/2">
+            <div class="flex items-center gap-12">
+                <button onclick="prevStep()" class="text-white/30 hover:text-white transition-colors"><i class="fas fa-caret-left text-2xl"></i></button>
+                <span id="console-counter" class="mono-text text-xs font-bold text-[#888] tracking-[0.4em]">PHASE 01 / 25</span>
+                <button onclick="nextStep()" class="text-white hover:text-[var(--accent-cyan)] hover:scale-110 transition-all"><i class="fas fa-caret-right text-2xl"></i></button>
+            </div>
+            <div class="w-48 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                <div id="progress-bar" class="h-full bg-[var(--accent-cyan)] transition-all duration-300" style="width: 0%;"></div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-6 w-1/4">
+            <button onclick="triggerPraise('EXCELLENT!', 'Great job!')" class="text-[#666] hover:text-[var(--accent-gold)] transition-colors" title="Quick Praise Pop-up"><i class="fas fa-star text-xl"></i></button>
+            <button onclick="toggleFullscreen()" class="text-[#666] hover:text-white transition-colors" title="Fullscreen"><i class="fas fa-expand text-xl"></i></button>
+            <button onclick="toggleWhiteboard()" class="text-[#666] hover:text-white transition-colors" title="Therapist Notepad"><i class="fas fa-pen-nib text-xl"></i></button>
+            <button onclick="toggleLessonNavigator()" class="text-[#666] hover:text-white transition-colors" title="Clinic Map"><i class="fas fa-bars-staggered text-xl"></i></button>
+        </div>
+    </footer>
+
+    <!-- GAVETAS LATERAIS (DRAWERS) -->
+    
+    <!-- Notepad (Whiteboard) -->
+    <aside id="whiteboard" class="fixed right-0 top-0 h-screen w-[450px] drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="header-title text-2xl font-black text-[var(--text-main)] tracking-tight">Therapist Notes</h2>
+            <button onclick="toggleWhiteboard()" class="text-white/50 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-4 bg-black/20 flex flex-wrap gap-2 border-b border-white/5">
+            <button onclick="insertTag('[SYMPTOM]')" class="text-[10px] bg-white/5 border border-white/10 text-[#ccc] px-3 py-1.5 rounded-full hover:bg-[var(--accent-cyan)] hover:text-black transition-all font-bold uppercase tracking-widest mono-text">Symptom</button>
+            <button onclick="insertTag('[ADVICE]')" class="text-[10px] bg-white/5 border border-white/10 text-[#ccc] px-3 py-1.5 rounded-full hover:bg-[var(--accent-purple)] hover:text-white transition-all font-bold uppercase tracking-widest mono-text">Advice</button>
+        </div>
+        <textarea id="wb-text" class="flex-grow bg-transparent text-[var(--accent-cyan)] p-8 resize-none focus:outline-none mono-text text-sm leading-relaxed" placeholder="> Record patient data here..."></textarea>
+    </aside>
+
+    <!-- Navegador de Aula -->
+    <aside id="lesson-navigator" class="fixed right-0 top-0 h-screen w-80 drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 text-white font-bold uppercase tracking-widest flex justify-between items-center header-title text-xl">Clinic Map <button onclick="toggleLessonNavigator()"><i class="fas fa-times text-white/50 hover:text-white"></i></button></div>
+        <div id="nav-steps-list" class="flex-grow overflow-y-auto p-4 space-y-2 bg-[#0c101d]"></div>
+    </aside>
+
+    <!-- Dicionário Inteligente -->
+    <aside id="smart-dict" class="fixed right-0 top-0 h-screen w-[400px] drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="header-title text-2xl font-black text-[var(--accent-cyan)] tracking-tight"><i class="fas fa-book-medical mr-2 text-white/50"></i> Glossary</h2>
+            <button onclick="toggleDict()"><i class="fas fa-times text-xl text-white/50 hover:text-white"></i></button>
+        </div>
+        <div id="dict-content" class="flex-grow overflow-y-auto p-8 bg-[#0c101d] text-[var(--text-main)]">
+            <div class="flex flex-col items-center justify-center h-full text-center opacity-30">
+                <i class="fas fa-search text-4xl mb-4"></i>
+                <p class="mono-text text-xs uppercase tracking-widest">Double-click any English word</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- HUD do Professor -->
+    <aside id="teacher-hud" class="fixed right-0 top-0 h-screen w-[350px] drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="header-title text-2xl font-black text-[var(--accent-gold)] tracking-tight"><i class="fas fa-user-md mr-2"></i> Doctor's Guide</h2>
+            <button onclick="toggleTeacherHUD()"><i class="fas fa-times text-xl text-white/50 hover:text-white"></i></button>
+        </div>
+        <div class="flex-grow overflow-y-auto p-8 space-y-8 bg-[#0c101d]">
+            <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                <p class="text-[10px] font-bold text-[var(--accent-gold)] uppercase tracking-widest mb-3 mono-text">Lesson Focus</p>
+                <p class="text-sm text-[#ccc] leading-relaxed">Guide the student to understand the <strong class="text-[var(--accent-cyan)]">Zero Conditional</strong> for facts and <strong class="text-[var(--accent-purple)]">Imperatives</strong> for giving medical/health advice.</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 mono-text">Prescribe Feedback</p>
+                <div class="space-y-3">
+                    <button onclick="triggerPraise('PERFECT DIAGNOSIS!', 'Spot on grammar.')" class="w-full py-4 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/30 rounded-xl font-bold text-xs hover:bg-[var(--accent-cyan)] hover:text-black transition-all mono-text tracking-widest">SEND: CYAN PILL</button>
+                    <button onclick="triggerPraise('EXCELLENT!', 'Great pronunciation.')" class="w-full py-4 bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] border border-[var(--accent-purple)]/30 rounded-xl font-bold text-xs hover:bg-[var(--accent-purple)] hover:text-white transition-all mono-text tracking-widest">SEND: PURPLE PILL</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay de Elogio (Praise) -->
+    <div id="praise-overlay" class="fixed inset-0 z-[6000] flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="praise-card" class="clinic-card p-16 rounded-[2rem] text-center transform scale-50 transition-transform duration-500 border-2">
+            <h2 id="praise-main" class="header-title text-5xl md:text-7xl font-black tracking-tighter uppercase mb-4 drop-shadow-lg"></h2>
+            <p id="praise-sub" class="text-xl font-bold tracking-widest uppercase mono-text mt-6 opacity-80"></p>
+        </div>
+    </div>
+
+    <!-- SCRIPT DO MOTOR PRINCIPAL -->
+    <script>
+        // --- ESTADO DO SISTEMA ---
+        let state = { hp: 100, xp: 0, current: 0 };
+        const esc = (s) => s ? s.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+        
+        const TYPES = { GUIDE: "Protocol", WARMUP: "Check-in", VOCAB: "Neuro Nodes", TAPE: "Audio Log", SCRIPT: "Transcript", GRAMMAR: "Logic", VITALS: "Vitals", SYNAPSE: "Synapse", RX: "Prescription", SPEAKING: "Therapy", WRAP: "Discharge" };
+
+        function step(type, title, html) { return { type, title, html }; }
+
+        function updateHUD() {
+            const h = document.getElementById('hp-bar'); if(h) h.style.width = Math.max(0, state.hp) + '%';
+            const x = document.getElementById('xp-bar'); if(x) x.style.width = Math.min(100, (state.xp / 25)) + '%';
+        }
+
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId); curId -= 1;
+                let tmp = array[curId]; array[curId] = array[randId]; array[randId] = tmp;
+            }
+            return array;
+        }
+
+        function insertTag(tag) { 
+            const text = document.getElementById('wb-text'); 
+            if (text) { text.value += (text.value.length > 0 ? '\n' : '') + tag + ' '; text.focus(); } 
+        }
+
+        // --- TEMPLATES TEMÁTICOS (THE SLEEP CLINIC) ---
+        
+        const bGuide = (title, points) => step(TYPES.GUIDE, title, `
+            <div class="max-w-4xl mx-auto space-y-10 animate-in fade-in py-10">
+                <div class="clinic-card border-t-4 border-[var(--accent-cyan)]">
+                    <p class="text-[var(--accent-cyan)] font-bold uppercase tracking-[0.4em] text-[10px] mono-text mb-6 flex items-center gap-3">
+                        <i class="fas fa-notes-medical text-lg"></i> Medical Briefing
+                    </p>
+                    <h2 class="text-5xl md:text-6xl font-black text-white tracking-tighter leading-none header-title mb-10 pb-8 border-b border-white/10">${title}</h2>
+                    <div class="space-y-6">
+                        ${points.map(p => `<p class="text-xl text-[#ccc] font-medium leading-relaxed flex items-start gap-4"><i class="fas fa-check-circle text-[var(--accent-purple)] mt-1"></i> ${p}</p>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Check-in (Discussão)
+        const bPreWatchDiscuss = (title, prompt, starter) => step(TYPES.WARMUP, title, `
+            <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12 animate-in fade-in">
+                <div class="w-full text-left p-8 clinic-card mb-4 border-l-4 border-l-[var(--accent-gold)]">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[#888] mb-3 mono-text">Patient Sync</p>
+                    <p class="text-2xl font-bold text-white italic">"${starter}"</p>
+                </div>
+                <h2 class="header-title text-5xl md:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-md">${prompt}</h2>
+                <div class="w-full max-w-xl group relative cursor-pointer" onclick="this.querySelector('.reveal-box').classList.remove('opacity-0', 'translate-y-4')">
+                    <div class="clinic-card p-10 text-center transition-all group-hover:bg-white/5 border border-white/10">
+                        <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-widest mb-6 mono-text pulse-soft"><i class="fas fa-fingerprint mr-2"></i>Tap for Medical Advice</p>
+                        <p class="reveal-box opacity-0 translate-y-4 transition-all duration-500 text-xl font-bold text-[var(--accent-purple)] header-title">"Adults need 7 to 9 hours of sleep per night to function properly."</p>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        const bPostWatchImpressions = (title, prompt) => step(TYPES.WARMUP, title, `
+            <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12 animate-in fade-in">
+                <h2 class="header-title text-5xl md:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-md">${prompt}</h2>
+                <div class="clinic-card p-10 text-left border border-white/10 w-full max-w-2xl bg-black/40">
+                    <p class="text-[10px] font-bold text-[var(--accent-gold)] uppercase tracking-widest mb-6 mono-text"><i class="fas fa-comment-dots mr-2"></i>Speaking Starters</p>
+                    <ul class="text-white space-y-4 font-medium text-xl">
+                        <li>> "I was surprised that..."</li>
+                        <li>> "I learned that..."</li>
+                        <li>> "I didn't know that..."</li>
+                    </ul>
+                </div>
+            </div>
+        `);
+
+        // Vitals Monitor (Múltipla Escolha)
+        const bVitalsCheck = (id, title, prompt, options, correctIdx, followup, starter) => step(TYPES.VITALS, title, `
+            <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12 animate-in fade-in">
+                <div class="w-full text-left p-8 clinic-card mb-4 border-l-4 border-l-[var(--accent-gold)] shadow-lg">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[#888] mb-3 mono-text"><i class="fas fa-heartbeat mr-2"></i> Patient Status</p>
+                    <p class="text-2xl font-bold text-white italic">"${starter}"</p>
+                </div>
+                <h2 class="header-title text-4xl md:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-md">${prompt}</h2>
+                
+                <div class="w-full max-w-2xl space-y-4" id="vitals-options-${id}">
+                    ${options.map((opt, i) => `
+                        <div class="vital-row locked-check" onclick="handleVitalsTrial('${id}', this, ${i === correctIdx}, '${esc(followup)}', '${esc(starter)}')">
+                            <svg width="40" height="30" viewBox="0 0 100 40" class="mr-6">
+                                <path class="vital-line" d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20"></path>
+                            </svg>
+                            <span class="text-2xl font-bold text-white">${opt}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div id="followup-box-${id}" class="hidden w-full max-w-2xl p-8 clinic-card border border-[var(--accent-cyan)]/30 mt-8">
+                    <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-widest mb-4 mono-text">Doctor's Note</p>
+                    <p class="text-xl font-bold text-white mb-2">${followup}</p>
+                </div>
+            </div>
+        `);
+
+        // Neuro Nodes (Vocab Flip Cards)
+        function bNeuroVocab(title, words) {
+            const nodesHtml = words.map(w => `
+                <div class="neuro-node w-[240px] h-[320px]" onclick="this.classList.toggle('flipped')">
+                    <div class="neuro-inner">
+                        <div class="neuro-front p-6">
+                            <div class="w-16 h-16 rounded-full bg-black/30 mb-6 flex items-center justify-center text-2xl text-[var(--accent-purple)] border border-[var(--accent-purple)]/50 shadow-[0_0_15px_rgba(157,78,221,0.2)]">
+                                <i class="fas ${w.icon || 'fa-brain'}"></i>
+                            </div>
+                            <span class="font-bold text-white text-xl header-title uppercase tracking-wide">${w.word}</span>
+                            <span class="mono-text text-[10px] text-[#888] mt-4 tracking-widest uppercase"><i class="fas fa-fingerprint mr-1"></i> Scan</span>
+                        </div>
+                        <div class="neuro-back p-6 text-left">
+                            <p class="mono-text text-white/70 font-bold text-[10px] mb-2 uppercase tracking-widest border-b border-white/20 pb-1">Definition</p>
+                            <p class="text-white text-sm leading-relaxed font-medium mb-4">${w.def}</p>
+                            <p class="mono-text text-[var(--accent-gold)] font-bold text-[10px] mb-2 uppercase tracking-widest border-b border-[var(--accent-gold)]/20 pb-1">Discuss</p>
+                            <p class="text-white text-xs leading-relaxed font-bold mb-1">${w.q || ''}</p>
+                            <p class="text-[10px] text-[#ccc] italic">"${w.starter || ''}"</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            return step(TYPES.VOCAB, title, `
+                <div class="max-w-6xl mx-auto flex flex-col items-center py-10 animate-in fade-in">
+                    <div class="text-center mb-16">
+                        <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--accent-cyan)]/10 inline-block px-5 py-2 rounded-full border border-[var(--accent-cyan)]/20">Memory Engrams</p>
+                        <h2 class="header-title text-5xl font-black text-white tracking-tight drop-shadow-md">${title}</h2>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-8">
+                        ${nodesHtml}
+                    </div>
+                </div>
+            `);
+        }
+
+        // The Tape (Video)
+        const bAudioLog = (title, videoId, instruction) => step(TYPES.TAPE, title, `
+            <div class="max-w-5xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                <div class="text-center mb-10">
+                    <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-4 mono-text"><i class="fas fa-satellite-dish mr-2"></i> Audio Log</p>
+                    <h2 class="header-title text-5xl font-black text-white tracking-tight drop-shadow-md">${title}</h2>
+                </div>
+                <div class="clinic-card w-full max-w-4xl flex flex-col items-center p-10">
+                    <p class="text-xl text-[var(--accent-cyan)] font-medium mb-8 text-center max-w-2xl leading-relaxed">"${instruction}"</p>
+                    <div class="w-full aspect-video bg-black border border-white/10 shadow-2xl relative overflow-hidden rounded-2xl">
+                        <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/${videoId}?rel=0" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Clinical Transcript (Grammar Extraction)
+        const bClinicalTranscript = (title, lines, targetIdx, analysis) => {
+            const linesHtml = lines.map((l, i) => {
+                if(i === targetIdx) return `
+                    <div class="script-item-container active group mb-6" onclick="revealScriptSidebar(this, '${esc(analysis.grammar)}', '${esc(analysis.logic)}', '${esc(analysis.followup)}', '${esc(analysis.starter)}')">
+                        <div class="script-active-box">
+                            <p class="text-2xl md:text-3xl font-black text-white leading-tight font-body">
+                                ${l.text.replace(/\[(.*?)\]/g, `<span class="text-[var(--accent-cyan)] underline decoration-[2px] underline-offset-4">$1</span>`)}
+                            </p>
+                        </div>
+                    </div>`;
+                return `<p class="transcript-line text-lg font-mono text-white/40 mb-6 cursor-pointer hover:text-white/80">${l.text}</p>`;
+            }).join('');
+
+            return step(TYPES.SCRIPT, title, `
+                <div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-start py-6 animate-in fade-in">
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-8">
+                            <p class="text-[var(--accent-cyan)] font-black uppercase tracking-[0.2em] text-[11px] mono-text"><i class="fas fa-wave-square mr-2 animate-pulse"></i> Patient Transcript</p>
+                        </div>
+                        ${linesHtml}
+                    </div>
+                    <div class="lg:col-span-5 relative overflow-hidden clinic-card p-10 min-h-[500px] flex flex-col">
+                        <div class="mb-10 relative z-10">
+                            <p class="text-[10px] font-black text-[var(--accent-purple)] uppercase tracking-[0.3em] mb-4 mono-text">Grammar Logic</p>
+                            <h3 class="text-4xl text-white font-black tracking-tighter header-title" id="s-grammar">DECODING...</h3>
+                        </div>
+                        <div class="w-full h-px bg-white/10 mb-10 relative z-10"></div>
+                        <div class="flex-grow mb-10 relative z-10">
+                            <p class="text-[10px] font-black text-[var(--accent-cyan)] uppercase tracking-[0.3em] mb-4 mono-text">Why use this?</p>
+                            <p class="text-xl text-[#ccc] font-medium leading-relaxed" id="s-logic">Click the active transcript line to reveal the clinical logic.</p>
+                        </div>
+                        <div class="bg-black/50 p-8 rounded-2xl border border-[var(--accent-gold)]/30 mt-auto relative z-10">
+                            <p class="text-lg font-bold text-white mb-2" id="s-question">Awaiting analysis...</p>
+                            <p class="text-sm font-bold text-[var(--accent-gold)] italic" id="s-starter">"..."</p>
+                        </div>
+                    </div>
+                </div>
+            `);
+        };
+
+        // Synapse Link
+        function bSynapseLink(title, pairs) {
+            let lefts = pairs.map((p, i) => ({text: p.condition, id: i, type: 'L'}));
+            let rights = pairs.map((p, i) => ({text: p.result, id: i, type: 'R'}));
+            lefts = shuffleArray(lefts); rights = shuffleArray(rights);
+
+            const buildNodes = (arr) => arr.map(item => `
+                <div class="synapse-node text-lg text-center" data-id="${item.id}" data-type="${item.type}" onclick="handleSynapse(this)">
+                    ${item.text}
+                </div>
+            `).join('');
+
+            return step(TYPES.SYNAPSE, title, `
+                <div class="max-w-5xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                    <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-[0.4em] mb-6 mono-text bg-[var(--accent-cyan)]/10 px-4 py-1.5 rounded-full">Neural Pathways</p>
+                    <h2 class="header-title text-5xl md:text-6xl font-black text-white tracking-tight mb-8 text-center">${title}</h2>
+                    <p class="text-[#888] text-lg mb-12 text-center">Click a condition on the left, then click its logical result on the right to build the synapse.</p>
+                    
+                    <div class="w-full grid grid-cols-2 gap-16 relative" id="synapse-board">
+                        <div class="flex flex-col gap-6" id="syn-left">${buildNodes(lefts)}</div>
+                        <div class="flex flex-col gap-6" id="syn-right">${buildNodes(rights)}</div>
+                    </div>
+                    <div id="synapse-hub" class="hidden mt-12 text-[var(--accent-cyan)] mono-text font-bold text-xl bg-[var(--accent-cyan)]/10 p-6 rounded-xl border border-[var(--accent-cyan)]/20">> ALL SYNAPSES CONNECTED.</div>
+                </div>
+            `);
+        }
+
+        // Prescription Pad
+        function bPrescriptionPad(title, textBody, words) {
+            let htmlText = textBody.replace(/\[(.*?)\]/g, (match, word) => {
+                return `<span class="pill-blank" data-expected="${word}" onclick="revertPill(this)"></span>`;
+            });
+            let shuffled = shuffleArray([...words]);
+            let pillBtns = shuffled.map(w => `<button class="pill-btn" onclick="selectPill(this, '${w}')">${w}</button>`).join('');
+
+            return step(TYPES.RX, title, `
+                <div class="max-w-4xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                    <p class="text-[10px] font-bold text-[var(--accent-purple)] uppercase tracking-[0.4em] mb-4 mono-text">Clinical Report</p>
+                    <h2 class="header-title text-5xl font-black text-white tracking-tight mb-12 text-center">${title}</h2>
+                    
+                    <div class="w-full max-w-3xl prescription-pad mb-10 text-2xl font-bold">
+                        <div class="rx-symbol">Rx</div>
+                        <p class="mb-4 text-sm text-gray-500 uppercase tracking-widest border-b border-gray-300 pb-2">Patient Diagnosis</p>
+                        <div class="leading-[3rem]">${htmlText}</div>
+                    </div>
+
+                    <div class="w-full max-w-3xl bg-black/40 p-6 rounded-2xl border border-white/5 text-center">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 mono-text">Available Prescriptions</p>
+                        <div class="flex flex-wrap justify-center gap-4" id="pill-container">
+                            ${pillBtns}
+                        </div>
+                    </div>
+                    <div id="rx-hub" class="hidden mt-10 text-[var(--accent-cyan)] mono-text font-bold text-xl">> PRESCRIPTION COMPLETE.</div>
+                </div>
+            `);
+        }
+
+        // Clinical Diagnosis (The Fixer)
+        function bClinicNotes(title, codeLines, expectedFixes, answerKeyHtml) {
+            let expectedFixesCopy = [...expectedFixes]; 
+            let htmlLines = codeLines.map((line, i) => {
+                return line.replace(/\[(.*?)\]/g, (match, word) => {
+                    const fixData = expectedFixesCopy.shift() || {ans: word};
+                    return `<span class="symptom-word" onclick="triggerDiagnosis(this, '${esc(fixData.ans)}')">${word}</span>`;
+                });
+            }).join('<br><br>');
+
+            return step(TYPES.DRILL, title, `
+                <div class="max-w-4xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                    <p class="text-[10px] font-bold text-[var(--hp-red)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--hp-red)]/10 px-4 py-1.5 rounded-full pulse-soft">Symptom Detected</p>
+                    <h2 class="header-title text-5xl font-black text-white tracking-tight mb-8 text-center">${title}</h2>
+                    <p class="text-[#888] text-lg mb-12 text-center">Click the red symptoms (errors) to restore the grammar in the medical chart.</p>
+                    
+                    <div class="w-full clinic-card relative overflow-hidden text-2xl leading-relaxed text-[#ccc] border border-white/10">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-6 mb-8">
+                            <p class="text-xs text-[#666] mono-text uppercase tracking-widest font-bold">Chart #402</p>
+                            <i class="fas fa-heartbeat text-[var(--accent-cyan)] text-2xl"></i>
+                        </div>
+                        <div class="font-medium">
+                            ${htmlLines}
+                        </div>
+                        
+                        <div id="debug-panel" class="absolute bottom-0 left-0 w-full bg-[#0a0c16] border-t-2 border-[var(--accent-cyan)] p-8 transform translate-y-full transition-transform duration-300 flex items-center gap-6 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+                            <span class="text-[var(--accent-cyan)] font-bold text-lg mono-text">> DIAGNOSE:</span>
+                            <input type="text" id="debug-input" class="bg-black text-white border border-white/20 rounded-xl px-6 py-4 flex-1 text-xl focus:outline-none focus:border-[var(--accent-cyan)]" autocomplete="off" placeholder="Type correct verb...">
+                            <button onclick="submitDiagnosis()" class="btn-cyan px-10 py-4 text-lg">PRESCRIBE</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 text-center w-full">
+                        <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="text-xs font-bold text-gray-400 hover:text-[var(--accent-gold)] mono-text uppercase tracking-widest transition-colors bg-white/5 px-6 py-3 rounded-full border border-white/10"><i class="fas fa-key mr-2"></i>Show Answer Key</button>
+                        <div class="hidden mt-6 bg-black/40 border border-white/10 p-8 rounded-2xl text-left w-full max-w-3xl mx-auto shadow-lg">
+                            <p class="text-[10px] font-bold text-[var(--accent-gold)] uppercase tracking-widest mb-4 mono-text">Correct Medical Record</p>
+                            <p class="text-lg text-gray-300 leading-relaxed font-medium">${answerKeyHtml}</p>
+                        </div>
+                    </div>
+
+                    <div id="fixer-hub" class="hidden mt-10 text-[var(--accent-cyan)] mono-text font-bold text-xl bg-[var(--accent-cyan)]/10 p-6 rounded-xl border border-[var(--accent-cyan)]/20">> PATIENT CURED.</div>
+                </div>
+            `);
+        }
+
+        // Therapy Session (Speaking)
+        const bTherapySession = (title, prompt, bullets, starter) => step(TYPES.SPEAKING, title, `
+            <div class="max-w-5xl mx-auto w-full flex flex-col items-center justify-center min-h-[60vh] text-center animate-in fade-in py-10 relative">
+                <div class="z-10 flex flex-col items-center w-full">
+                    <div class="flex items-center gap-3 mb-12 bg-white/5 text-[#ccc] px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] border border-white/10 mono-text">
+                        <i class="fas fa-couch text-[var(--accent-purple)]"></i> Therapy Session
+                    </div>
+                    <h2 class="header-title text-5xl md:text-7xl font-black tracking-tighter text-white leading-tight mb-16">${prompt}</h2>
+                    
+                    ${bullets ? `<div class="flex flex-wrap justify-center gap-4 max-w-3xl mb-16">${bullets.map(b => `<span class="px-8 py-4 clinic-card text-white font-bold text-xl">${b}</span>`).join('')}</div>` : ''}
+                    
+                    <div class="w-full max-w-3xl border border-white/10 bg-[#13182b]/50 p-6 rounded-2xl">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="toggleStarter(this)">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-comment-medical text-[var(--accent-gold)]"></i>
+                                <span class="header-title text-white font-bold tracking-widest uppercase">Open Medical File (Hints)</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-white/50"></i>
+                        </div>
+                        <div class="starter-content text-left">
+                            <div class="bg-black/40 p-6 rounded-xl border border-white/5 mt-4">
+                                <p class="text-2xl font-bold text-white leading-tight italic">"${starter}"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Fact Check (Bamboozle)
+        const bFactCheck = (title, statement1, statement2) => step(TYPES.STAND, title, `
+            <div class="max-w-5xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-6 mono-text border border-white/10 px-4 py-1.5 rounded-full">Fact or Myth</p>
+                <h2 class="header-title text-5xl font-black text-white tracking-tight mb-16 text-center">${title}</h2>
+                
+                <div id="bamb-q1" class="w-full max-w-4xl clinic-card text-center mb-8 border-t-4 border-[var(--accent-cyan)]">
+                    <p class="text-3xl font-bold text-white leading-relaxed header-title mb-12">${statement1.text.replace(/\[(.*?)\]/g, '<span class="text-[var(--accent-cyan)]">$1</span>')}</p>
+                    <div class="flex gap-6 justify-center">
+                        <button class="btn-cyan px-12 py-4 text-lg" onclick="checkBamb(1, ${statement1.isTrue})">FACT</button>
+                        <button class="btn-cyan px-12 py-4 text-lg" onclick="checkBamb(1, ${!statement1.isTrue})">MYTH</button>
+                    </div>
+                </div>
+                
+                <div id="bamb-q2" class="hidden w-full max-w-4xl clinic-card text-center mb-8 border-t-4 border-[var(--accent-purple)]">
+                    <p class="text-3xl font-bold text-white leading-relaxed header-title mb-12">${statement2.text.replace(/\[(.*?)\]/g, '<span class="text-[var(--accent-purple)]">$1</span>')}</p>
+                    <div class="flex gap-6 justify-center">
+                        <button class="btn-purple px-12 py-4 text-lg" onclick="checkBamb(2, ${statement2.isTrue})">FACT</button>
+                        <button class="btn-purple px-12 py-4 text-lg" onclick="checkBamb(2, ${!statement2.isTrue})">MYTH</button>
+                    </div>
+                </div>
+                
+                <div id="bamb-fb" class="hidden mt-8 p-6 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] font-bold text-2xl mono-text text-center w-full max-w-4xl rounded-xl border border-[var(--accent-cyan)]/20">> NEURAL PATHWAYS ALIGNED.</div>
+            </div>
+        `);
+
+        const bWrap = () => step(TYPES.WRAP, "Clinic Discharged", `
+            <div class="text-center max-w-3xl mx-auto flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in">
+                <div class="w-40 h-40 rounded-[2rem] bg-gradient-to-br from-[#13182b] to-[#0a0c16] mx-auto flex items-center justify-center text-7xl text-[var(--accent-cyan)] mb-12 shadow-[0_0_50px_rgba(0,210,255,0.2)] border border-[var(--accent-cyan)]/30">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <h1 class="header-title text-6xl md:text-8xl font-black text-white tracking-tighter mb-6 uppercase">Discharged</h1>
+                <p class="text-2xl text-[#888] mb-16 font-medium">You survived the Sleep Clinic and mastered Conditional Advice!</p>
+                <button onclick="goHome()" class="btn-cyan px-12 py-5 text-xl tracking-widest">Return to Dashboard</button>
+            </div>
+        `);
+
+        // --- LESSON DATA (25 STEPS - A2 Sleep Clinic) ---
+        const lessonData = [
+            bGuide("Clinical Briefing", [
+                "Level: A2 Pre-Intermediate.", 
+                "Focus: Zero Conditional & Imperatives (Giving Advice).",
+                "Theme: Sleep, Health, Brain Science.",
+                "Goal: Talk about facts and give medical/life advice."
+            ]),
+            
+            bVitalsCheck("v1", "Patient Check-in", "Are you a Night Owl or an Early Bird?", ["I am a Night Owl.", "I am an Early Bird.", "I am a bit of both."], 0, "How do you feel today?", "Today, I feel tired because..."), 
+            
+            bPreWatchDiscuss("Preparation", "Before we analyze the brainwaves...", "How many hours of sleep do you usually need to feel 100% functional?", "I usually need..."),
+
+            bNeuroVocab("Sleep Patterns", [
+                {word: "Take a nap", def: "To sleep for a short time during the day.", icon: "fa-bed", q: "Do you take naps on weekends?", starter: "Yes, on Sunday I usually take a nap..."},
+                {word: "Catch 40 winks", def: "An idiom meaning to get a little sleep.", icon: "fa-moon", q: "Is it easy for you to catch 40 winks on a plane?", starter: "No, I can't catch 40 winks on a plane..."},
+                {word: "Doze off", def: "To fall asleep slowly, often during the day.", icon: "fa-battery-quarter", q: "Have you ever dozed off in class?", starter: "Once, I dozed off when..."},
+                {word: "Sleep on it", def: "To wait until the next day before making a big decision.", icon: "fa-brain", q: "When did you last 'sleep on' a decision?", starter: "I slept on it when I bought..."}
+            ]),
+
+            bAudioLog("The BBC Report", "j2PdEQpu5js", "Listen to Georgie and Phil. Phil was sleeping at work! Try to hear the answer: How much of our lives do we spend asleep?"),
+
+            bPostWatchImpressions("First Impressions", "What was the most interesting or surprising fact you heard in the report?"),
+
+            bVitalsCheck("v2", "Audio Comprehension", "According to the video, humans spend about ___ of their lives sleeping.", ["a half", "a quarter", "a third"], 2, "Why do you think we need so much sleep?", "I think our brains need time to..."),
+
+            bNeuroVocab("Clinical Terms", [
+                {word: "Concentrate", def: "To think very carefully about something you are doing.", icon: "fa-crosshairs", q: "Is it hard to concentrate when you are hungry?", starter: "Yes, if I am hungry, I can't..."},
+                {word: "Deprivation", def: "Not having something you need (like sleep).", icon: "fa-exclamation-triangle", q: "How do you feel after sleep deprivation?", starter: "After sleep deprivation, I feel..."},
+                {word: "Fight or Flight", def: "The body's automatic reaction to stress or danger.", icon: "fa-running", q: "What causes a fight or flight response for you?", starter: "If I see a snake, my fight or flight..."},
+                {word: "Knock-on effect", def: "When one event causes another event to happen.", icon: "fa-project-diagram", q: "What is the knock-on effect of skipping breakfast?", starter: "If I skip breakfast, the knock-on effect is..."}
+            ]),
+
+            bClinicalTranscript("Scientific Facts", [
+                {text: "Phil: I'm just catching 40 winks."},
+                {text: "Georgie: [If you don't sleep enough, you can't concentrate.]"},
+                {text: "Phil: I know, sleep is very important."}
+            ], 1, {grammar: "Zero Conditional", logic: "Use 'If + Present Simple, Present Simple' to state scientific facts or general truths that always happen.", followup: "What happens if you drink coffee at 11 PM?", starter: "If I drink coffee at night, I..."}),
+
+            bClinicalTranscript("Medical Advice", [
+                {text: "Phil: I have a huge project to finish. I'm stressed."},
+                {text: "Georgie: [If you have a big problem, sleep on it.]"},
+                {text: "Phil: You are right. I will decide tomorrow."}
+            ], 1, {grammar: "Imperatives", logic: "Use 'If + Present Simple, Imperative (Verb without subject)' to give strong advice or orders.", followup: "Give advice: 'I have a headache.'", starter: "If you have a headache, take..."}),
+
+            bClinicalTranscript("Strong Recommendations", [
+                {text: "Georgie: Sleep deprivation is a serious condition."},
+                {text: "Phil: [If a person suffers from it, they should see a doctor.]"}
+            ], 1, {grammar: "Modals (Should/Must)", logic: "You can also use 'Should' or 'Must' in the second part to give strong recommendations.", followup: "Give advice: 'I want to learn English.'", starter: "If you want to learn English, you should..."}),
+
+            bVitalsCheck("v3", "Brain Wave Scanner", "If I ___ too much sugar, I feel sick.", ["eat", "will eat", "ate"], 0, "Is this a fact or a future plan?", "It's a fact about my body. Zero conditional!"),
+            bVitalsCheck("v4", "Brain Wave Scanner", "If you are tired, ___ some shut eye.", ["get", "gets", "getting"], 0, "Why is 'get' correct here?", "Because it's an Imperative (advice)."),
+            bVitalsCheck("v5", "Brain Wave Scanner", "If Phil ___ at work again, the boss will be angry.", ["sleeps", "sleep", "sleeping"], 0, "Notice the 's' on sleeps.", "Yes, because Phil is 'He' in Present Simple."),
+
+            bSynapseLink("Neural Pathways", [
+                {condition: "If you feel stressed...", result: "...take a break."},
+                {condition: "If you don't sleep...", result: "...you can't concentrate."},
+                {condition: "If you have a big problem...", result: "...sleep on it."}
+            ]),
+
+            bClinicNotes("Patient File: Phil", [
+                "Phil is very tired today. He [was catch] 40 winks at the office.",
+                "If Phil [not] sleep, he [cannot] concentrate.",
+                "The doctor says: If you [feeling] stressed, [to take] a break."
+            ], [ {ans: "was catching"}, {ans: "doesn't"}, {ans: "can't"}, {ans: "feel"}, {ans: "take"} ],
+            "Phil is very tired today. He <strong class='text-[var(--accent-cyan)]'>was catching</strong> 40 winks at the office.<br><br>If Phil <strong class='text-[var(--accent-cyan)]'>doesn't</strong> sleep, he <strong class='text-[var(--accent-cyan)]'>can't</strong> concentrate.<br><br>The doctor says: If you <strong class='text-[var(--accent-cyan)]'>feel</strong> stressed, <strong class='text-[var(--accent-cyan)]'>take</strong> a break."),
+            
+            bClinicNotes("Patient File: Georgie", [
+                "She says: If you [wants] to live longer, sleep 8 hours.",
+                "Also, if you [has] a problem, [sleeps] on it."
+            ], [ {ans: "want"}, {ans: "have"}, {ans: "sleep"} ],
+            "She says: If you <strong class='text-[var(--accent-cyan)]'>want</strong> to live longer, sleep 8 hours.<br><br>Also, if you <strong class='text-[var(--accent-cyan)]'>have</strong> a problem, <strong class='text-[var(--accent-cyan)]'>sleep</strong> on it."),
+
+            bTherapySession("Therapy 1", "The Stressed Worker", ["Works 14 hours", "No sleep", "Give advice"], "If you work 14 hours a day, you should..."),
+            bTherapySession("Therapy 2", "The Big Decision", ["New job offer", "Not sure", "Give advice"], "If you are not sure about the job, sleep on..."),
+            bTherapySession("Therapy 3", "The Fight or Flight", ["Panicking", "Fast heartbeat", "What is it?"], "If your heart beats fast, it means your body is..."),
+
+            bPrescriptionPad("Prescription Pad", "Rx: For better sleep. If you [drink] coffee late, you won't sleep. If you are stressed, you [should] relax. Finally, if you feel tired during the day, [take] a short nap.", ["drink", "should", "take"]),
+
+            bFactCheck("Science Check", 
+                {text: "A [knock-on effect] is a direct, immediate consequence of an action.", isTrue: false}, 
+                {text: "If you don't sleep, your [fight-or-flight] response is activated.", isTrue: true}
+            ),
+
+            bFactCheck("Grammar Check", 
+                {text: "For facts, we use: If + Present, [Present].", isTrue: true}, 
+                {text: "To give advice, we say: If you are tired, [you will sleeping].", isTrue: false}
+            ),
+
+            bTherapySession("Final Diagnosis", "The Perfect Routine", ["Work", "Sleep", "Balance"], "If you want a good life, you must..."),
+
+            bWrap()
+        ];
+
+        // --- LÓGICA DE RUNTIME ---
+        function toggleElementClass(id, action, className) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (action === 'add') el.classList.add(className);
+                else if (action === 'remove') el.classList.remove(className);
+                else if (action === 'toggle') el.classList.toggle(className);
+            }
+        }
+
+        function startMission() {
+            toggleElementClass('dashboard', 'add', 'hidden'); toggleElementClass('dashboard', 'remove', 'flex');
+            toggleElementClass('hud-top', 'remove', 'hidden'); toggleElementClass('hud-top', 'add', 'flex');
+            toggleElementClass('mission-arena', 'remove', 'hidden'); toggleElementClass('mission-arena', 'add', 'flex');
+            toggleElementClass('nav-console', 'remove', 'hidden'); toggleElementClass('nav-console', 'add', 'flex');
+            buildLessonNavigator(); renderStep();
+        }
+
+        function goHome() {
+            toggleElementClass('dashboard', 'remove', 'hidden'); toggleElementClass('dashboard', 'add', 'flex');
+            toggleElementClass('hud-top', 'add', 'hidden'); toggleElementClass('hud-top', 'remove', 'flex');
+            toggleElementClass('mission-arena', 'add', 'hidden'); toggleElementClass('mission-arena', 'remove', 'flex');
+            toggleElementClass('nav-console', 'add', 'hidden'); toggleElementClass('nav-console', 'remove', 'flex');
+            state.current = 0; updateHUD();
+            document.getElementById('whiteboard')?.classList.remove('active');
+            document.getElementById('lesson-navigator')?.classList.remove('active');
+            document.getElementById('smart-dict')?.classList.remove('active');
+            document.getElementById('teacher-hud')?.classList.remove('active');
+        }
+
+        function renderStep() {
+            if (!lessonData || !lessonData[state.current]) return;
+            const step = lessonData[state.current];
+            const pTitle = document.getElementById('console-title'); if(pTitle) pTitle.innerText = step.title;
+            const pType = document.getElementById('console-type'); if(pType) pType.innerText = step.type;
+            const sCount = document.getElementById('console-counter'); if(sCount) sCount.innerText = `PHASE ${String(state.current + 1).padStart(2, '0')} / ${lessonData.length}`;
+            const content = document.getElementById('mission-content'); if(content) content.innerHTML = `<div class="w-full max-w-7xl mx-auto">${step.html}</div>`;
+            updateHUD();
+            
+            const navList = document.getElementById('nav-steps-list');
+            if (navList) {
+                Array.from(navList.children).forEach((btn, i) => {
+                    if(i === state.current) { btn.classList.add('bg-[var(--accent-cyan)]/10', 'text-[var(--accent-cyan)]', 'font-bold', 'border-l-4', 'border-[var(--accent-cyan)]'); btn.classList.remove('text-[#888]', 'hover:bg-white/5'); } 
+                    else { btn.classList.remove('bg-[var(--accent-cyan)]/10', 'text-[var(--accent-cyan)]', 'font-bold', 'border-l-4', 'border-[var(--accent-cyan)]'); btn.classList.add('text-[#888]', 'hover:bg-white/5'); }
+                });
+            }
+        }
+
+        function nextStep() { if (state.current < lessonData.length - 1) { state.current++; renderStep(); } else { goHome(); } }
+        function prevStep() { if (state.current > 0) { state.current--; renderStep(); } }
+        
+        function toggleWhiteboard() { document.getElementById('whiteboard').classList.toggle('active'); document.getElementById('lesson-navigator')?.classList.remove('active'); document.getElementById('smart-dict')?.classList.remove('active'); document.getElementById('teacher-hud')?.classList.remove('active'); }
+        function toggleLessonNavigator() { document.getElementById('lesson-navigator').classList.toggle('active'); document.getElementById('whiteboard')?.classList.remove('active'); document.getElementById('smart-dict')?.classList.remove('active'); document.getElementById('teacher-hud')?.classList.remove('active'); }
+        function toggleDict() { document.getElementById('smart-dict').classList.toggle('active'); document.getElementById('whiteboard')?.classList.remove('active'); document.getElementById('lesson-navigator')?.classList.remove('active'); document.getElementById('teacher-hud')?.classList.remove('active'); }
+        function toggleTeacherHUD() { document.getElementById('teacher-hud').classList.toggle('active'); document.getElementById('whiteboard')?.classList.remove('active'); document.getElementById('lesson-navigator')?.classList.remove('active'); document.getElementById('smart-dict')?.classList.remove('active'); }
+
+        function toggleFullscreen() {
+            const doc = window.document;
+            const docEl = doc.documentElement;
+            const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+            if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                requestFullScreen.call(docEl).catch(e => console.log(e));
+            } else { cancelFullScreen.call(doc); }
+        }
+
+        function toggleStarter(btn) {
+            const content = btn.nextElementSibling;
+            if (content.classList.contains('open')) { content.classList.remove('open'); } else { content.classList.add('open'); }
+        }
+
+        // --- LÓGICA DOS MINIJOGOS TEMÁTICOS ---
+
+        // Vitals Monitor (MCQ)
+        function handleVitalsTrial(id, row, isCorrect, followup, starter) {
+            if(row.classList.contains('locked-check')) {
+                const parent = row.parentElement; 
+                Array.from(parent.children).forEach(child => { child.onclick = null; child.classList.add('opacity-50', 'cursor-default'); child.classList.remove('locked-check');});
+                row.classList.remove('opacity-50'); 
+                
+                if(id === 'v1' || isCorrect) {
+                    row.classList.add('correct'); state.xp += 2; updateHUD(); shootConfetti();
+                    const fBox = document.getElementById(`followup-box-${id}`); if(fBox) fBox.classList.remove('hidden');
+                } else { row.classList.add('wrong'); state.hp -= 10; updateHUD(); }
+            }
+        }
+
+        function revealScriptSidebar(el, grammar, logic, followup, starter) {
+            document.querySelectorAll('.script-item-container').forEach(b => b.classList.remove('active')); 
+            el.classList.add('active');
+            
+            const g = document.getElementById('s-grammar'); if(g) g.innerText = grammar;
+            const l = document.getElementById('s-logic'); if(l) l.innerText = logic;
+            const q = document.getElementById('s-question'); if(q) q.innerText = followup;
+            const s = document.getElementById('s-starter'); if(s) s.innerText = `STARTER: "${starter}"`;
+        }
+
+        // Synapse Link
+        let activeSynapse = null;
+        let synapsesMatched = 0;
+        function handleSynapse(node) {
+            if (node.classList.contains('matched')) return;
+            
+            if (!activeSynapse) {
+                activeSynapse = node;
+                node.classList.add('active');
+            } else {
+                if (activeSynapse.dataset.type !== node.dataset.type && activeSynapse.dataset.id === node.dataset.id) {
+                    activeSynapse.classList.replace('active', 'matched');
+                    node.classList.add('matched');
+                    activeSynapse = null;
+                    synapsesMatched++;
+                    const totalPairs = document.getElementById('synapse-board').children[0].children.length;
+                    if(synapsesMatched === totalPairs) {
+                        document.getElementById('synapse-hub').classList.remove('hidden');
+                        shootConfetti(); synapsesMatched = 0;
+                    }
+                } else {
+                    activeSynapse.classList.remove('active');
+                    activeSynapse.classList.add('shake', 'border-[var(--hp-red)]');
+                    node.classList.add('shake', 'border-[var(--hp-red)]');
+                    setTimeout(() => {
+                        activeSynapse.classList.remove('shake', 'border-[var(--hp-red)]');
+                        node.classList.remove('shake', 'border-[var(--hp-red)]');
+                        activeSynapse = null;
+                    }, 400);
+                }
+            }
+        }
+
+        // Prescription Pad
+        let activePill = "";
+        let padFilled = 0;
+        let totalPills = 0;
+        function selectPill(btn, word) {
+            document.querySelectorAll('.pill-btn').forEach(b => { b.style.background = '#13182b'; b.style.color = 'white'; });
+            btn.style.background = 'var(--accent-cyan)'; btn.style.color = 'black';
+            activePill = word;
+            totalPills = document.querySelectorAll('.pill-blank').length;
+        }
+        function revertPill(blank) {
+            if(blank.classList.contains('filled')) return;
+            if(activePill === blank.dataset.expected) {
+                blank.innerText = activePill; blank.classList.add('filled');
+                padFilled++; activePill = "";
+                document.querySelectorAll('.pill-btn').forEach(b => { b.style.background = '#13182b'; b.style.color = 'white'; });
+                if(padFilled === totalPills) { document.getElementById('rx-hub').classList.remove('hidden'); shootConfetti(); padFilled = 0;}
+            } else if (activePill !== "") {
+                blank.classList.add('shake'); setTimeout(() => blank.classList.remove('shake'), 400);
+            }
+        }
+
+        // Clinical Diagnosis (The Fixer)
+        let activeBug = null; let expectedFix = ""; let bugsFixed = 0;
+        function triggerDiagnosis(el, answer) {
+            if(el.classList.contains('redacted-fixed')) return;
+            activeBug = el; expectedFix = answer;
+            const panel = document.getElementById('debug-panel'); panel.classList.remove('translate-y-full');
+            document.getElementById('debug-input').value = ''; document.getElementById('debug-input').focus();
+        }
+        function submitDiagnosis() {
+            const input = document.getElementById('debug-input').value.trim().toLowerCase();
+            const panel = document.getElementById('debug-panel');
+            if(input === expectedFix.toLowerCase()) {
+                activeBug.innerText = expectedFix; activeBug.classList.remove('symptom-word'); activeBug.classList.add('symptom-fixed');
+                panel.classList.add('translate-y-full');
+                const container = activeBug.closest('.clinic-card');
+                const remaining = container.querySelectorAll('.symptom-word').length;
+                if(remaining === 0) { shootConfetti(); state.xp += 2; updateHUD(); document.getElementById('fixer-hub').classList.remove('hidden');}
+            } else {
+                const inputEl = document.getElementById('debug-input'); inputEl.classList.add('shake', 'border-[var(--hp-red)]');
+                state.hp -= 10; updateHUD();
+                setTimeout(() => inputEl.classList.remove('shake', 'border-[var(--hp-red)]'), 400);
+            }
+        }
+        document.getElementById('debug-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitDiagnosis(); });
+
+        // Bamboozle
+        function checkBamb(q, isCorrect) {
+            const container = document.getElementById(`bamb-q${q}`);
+            if(isCorrect) {
+                container.classList.add('hidden');
+                if(q === 1) document.getElementById('bamb-q2').classList.remove('hidden');
+                else { document.getElementById('bamb-fb').classList.remove('hidden'); shootConfetti(); }
+            } else {
+                container.classList.add('shake', 'border-4', 'border-[var(--hp-red)]');
+                setTimeout(() => container.classList.remove('shake', 'border-4', 'border-[var(--hp-red)]'), 400);
+            }
+        }
+
+        // SMART DICTIONARY API
+        document.addEventListener('dblclick', async (e) => {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const selection = window.getSelection().toString().trim();
+            if(selection && /^[A-Za-z]+$/.test(selection)) { 
+                const panel = document.getElementById('smart-dict');
+                const content = document.getElementById('dict-content');
+                panel.classList.remove('translate-x-full');
+                content.innerHTML = `<div class="flex justify-center mt-10"><span class="text-[var(--accent-cyan)] font-bold animate-pulse mono-text">Analyzing term...</span></div>`;
+                
+                try {
+                    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${selection.toLowerCase()}`);
+                    const data = await response.json();
+                    if(data.title) { content.innerHTML = `<p class="text-center text-[var(--hp-red)] mt-10 font-bold mono-text">Term not recognized.</p>`; return; }
+                    
+                    const word = data[0].word; const phonetic = data[0].phonetic || '';
+                    const meaningsHtml = data[0].meanings.map(m => `
+                        <div class="mb-4 bg-white/5 p-5 rounded-2xl border border-white/10 shadow-sm relative">
+                            <span class="text-[var(--accent-purple)] text-xs font-bold uppercase tracking-widest mono-text">${m.partOfSpeech}</span>
+                            <p class="mt-2 text-white text-lg leading-relaxed">${m.definitions[0].definition}</p>
+                        </div>
+                    `).join('');
+                    
+                    content.innerHTML = `<h3 class="text-4xl header-title font-black text-white capitalize mb-1">${word}</h3><p class="text-gray-500 mono-text mb-8">${phonetic}</p>${meaningsHtml}`;
+                } catch(err) { content.innerHTML = `<p class="text-[var(--hp-red)] mt-10 font-bold">Connection Error.</p>`; }
+            }
+        });
+
+        function buildLessonNavigator() {
+            const list = document.getElementById('nav-steps-list'); if (!list) return;
+            list.innerHTML = '';
+            lessonData.forEach((step, i) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded flex items-center gap-3 transition-all header-title ${i === state.current ? 'bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] font-bold border-l-4 border-[var(--accent-cyan)] shadow-sm' : 'text-[#888] hover:bg-white/5'}`;
+                btn.innerHTML = `<span class="text-[10px] w-4 opacity-50">${i+1}</span><div class="flex flex-col truncate"><span class="text-sm truncate">${step.title}</span></div>`;
+                btn.onclick = () => { state.current = i; renderStep(); toggleLessonNavigator(); };
+                list.appendChild(btn);
+            });
+        }
+
+        function triggerPraise(main, sub) {
+            document.getElementById('teacher-hud')?.classList.remove('active'); 
+            const overlay = document.getElementById('praise-overlay'); const card = document.getElementById('praise-card');
+            if(main === 'PERFECT DIAGNOSIS!') {
+                card.className = "clinic-card p-16 rounded-[2rem] text-center transform scale-50 transition-transform duration-500 border-2 border-[var(--accent-cyan)] shadow-[0_0_50px_rgba(0,210,255,0.3)]";
+                document.getElementById('praise-main').className = "header-title text-5xl md:text-7xl font-black tracking-tighter uppercase mb-4 text-[var(--accent-cyan)] drop-shadow-lg";
+            } else {
+                card.className = "clinic-card p-16 rounded-[2rem] text-center transform scale-50 transition-transform duration-500 border-2 border-[var(--accent-gold)] shadow-[0_0_50px_rgba(255,183,3,0.3)]";
+                document.getElementById('praise-main').className = "header-title text-5xl md:text-7xl font-black tracking-tighter uppercase mb-4 text-[var(--accent-gold)] drop-shadow-lg";
+            }
+            document.getElementById('praise-main').innerText = main; document.getElementById('praise-sub').innerText = sub;
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => card.classList.replace('scale-50', 'scale-100'), 50); shootConfetti();
+            setTimeout(() => { card.classList.replace('scale-100', 'scale-50'); overlay.classList.add('opacity-0', 'pointer-events-none'); }, 2500);
+        }
+
+        function shootConfetti() {
+            const cCanvas = document.getElementById('confetti-canvas'); const cCtx = cCanvas.getContext('2d');
+            cCanvas.width = window.innerWidth; cCanvas.height = window.innerHeight;
+            const pieces = []; const colors = ['#00d2ff', '#9d4edd', '#ffb703', '#ffffff'];
+            for(let i=0; i<60; i++) pieces.push({ x: cCanvas.width/2, y: cCanvas.height/2+100, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20-5, size: Math.random()*8+4, color: colors[Math.floor(Math.random()*colors.length)], rot: Math.random()*360, rotSpeed: (Math.random()-0.5)*10 });
+            let animationId;
+            function animateC() {
+                cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height); let active = false;
+                pieces.forEach(p => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.rot += p.rotSpeed; if(p.y < cCanvas.height) active = true;
+                    cCtx.save(); cCtx.translate(p.x, p.y); cCtx.rotate(p.rot*Math.PI/180); cCtx.fillStyle = p.color; 
+                    cCtx.beginPath(); cCtx.arc(0, 0, p.size, 0, Math.PI * 2); cCtx.fill(); cCtx.restore();
+                });
+                if(active) animationId = requestAnimationFrame(animateC); else cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+            }
+            animateC();
+        }
+        
+        window.onload = () => { updateHUD(); buildLessonNavigator(); };
+    </script>
+</body>
+</html>
